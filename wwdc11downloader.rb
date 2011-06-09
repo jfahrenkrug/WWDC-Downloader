@@ -1,24 +1,40 @@
 # Have fun. Use at your own risk.
 
 require 'rubygems'
-require 'mechanize'
-require 'json'
 require 'fileutils'
 require 'net/http'
+
+begin
+  require 'mechanize'
+  require 'json'
+  require 'highline/import'
+rescue LoadError => e
+  puts
+  puts "You need to have the mechanize, json and highline gems installed."
+  puts "Install them by running"
+  puts
+  puts "  gem install mechanize json highline"
+  puts
+  puts "or"
+  puts
+  puts "  sudo gem install mechanize json highline"
+  puts
+  exit
+end
 
 puts "WWDC 2011 Session Material Downloader"
 puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
 puts "See you next year!"
 puts
 
-if ARGV.size < 2
-  puts "Usage: ruby wwdc2011downloader.rb <your Apple ID> <your ADC Password> [<target-dir>]"
+if ARGV.size < 1
+  puts "Usage: ruby wwdc2011downloader.rb <your Apple ID> [<target-dir>]"
   exit
 end
 
-base_uri = 'https://developer.apple.com/wwdc/scripts/services.php?type=get_session_data'
+BASE_URI = 'https://developer.apple.com/wwdc/scripts/services.php?type=get_session_data'
 
-dl_dir = if ARGV.size > 2 
+dl_dir = if ARGV.size > 1 
   ARGV.last
 else
   'wwdc2011-assets'
@@ -29,21 +45,33 @@ def mkdir(dir)
   Dir.mkdir dir unless File.exists?(dir)
 end
 
-# create dir
-mkdir(dl_dir)
-
 a = Mechanize.new
 
 # Login
-a.get(base_uri) do |page|
-  my_page = page.form_with(:name => 'appleConnectForm') do |f|
-    f.theAccountName  = ARGV[0]
-    f.theAccountPW = ARGV[1]
-  end.click_button
+wrong_password = true
+
+while wrong_password do
+  password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
+  
+  a.get(BASE_URI) do |page|
+    my_page = page.form_with(:name => 'appleConnectForm') do |f|
+      f.theAccountName  = ARGV[0]
+      f.theAccountPW = password
+    end.click_button
+
+    if my_page.body =~ /get_session_data/
+      wrong_password = false
+    else
+      puts "Wrong password, please try again."
+    end
+  end
 end
 
+# create dir
+mkdir(dl_dir)
+
 # get the sessions JSON  
-a.get(base_uri) do |page|
+a.get(BASE_URI) do |page|
   res = JSON.parse(page.body)
   
   sessions = res['response']['sessions']
@@ -54,7 +82,7 @@ a.get(base_uri) do |page|
       if session['type'] == 'Session'
         title = session['title']
         session_id = session['id']
-        puts "Session '#{title}'..."
+        puts "Session #{session_id} '#{title}'..."
 
         # get the files
         dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!/, '')}" 
@@ -85,7 +113,11 @@ a.get(base_uri) do |page|
           end
           
           if !has_samplecode
-            puts "  Sorry, this session doesn't have samplecode."
+            puts "  Sorry, this session doesn't have samplecode, cleaning up."
+            begin
+              Dir.delete( dirname )
+            rescue
+            end
           end
           
         end
