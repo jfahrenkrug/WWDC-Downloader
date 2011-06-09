@@ -95,19 +95,23 @@ a.get(BASE_URI) do |page|
             code_base_url = File.dirname(link.href)
             
             a.get("#{code_base_url}/book.json") do |book_json|
-              book_res = JSON.parse(book_json.body)
-              filename = book_res["sampleCode"]
-              url = "#{code_base_url}/#{filename}"
+              if book_json.body[0,1] == '<'
+                puts " Sorry, this samplecode apparently isn't available yet: #{code_base_url}/book.json"
+              else
+                book_res = JSON.parse(book_json.body)
+                filename = book_res["sampleCode"]
+                url = "#{code_base_url}/#{filename}"
               
-              puts "  Downloading #{url}"
-              begin
-                a.get(url) do |downloaded_file|
-                  open(dirname + "/" + filename, 'wb') do |file|
-                    file.write(downloaded_file.body)
+                puts "  Downloading #{url}"
+                begin
+                  a.get(url) do |downloaded_file|
+                    open(dirname + "/" + filename, 'wb') do |file|
+                      file.write(downloaded_file.body)
+                    end
                   end
+                rescue Exception => e
+                  puts "  Download failed #{e}"
                 end
-              rescue Exception => e
-                puts "  Download failed #{e}"
               end
             end
           end
