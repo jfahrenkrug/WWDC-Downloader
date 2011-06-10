@@ -88,42 +88,50 @@ a.get(BASE_URI) do |page|
         dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!/, '')}" 
         puts "  Creating #{dirname}"
         mkdir(dirname)
-        a.get(session['url']) do |page|
-          has_samplecode = false
-          page.links_with(:href => %r{/samplecode/} ).each do |link|            
-            has_samplecode = true
-            code_base_url = File.dirname(link.href)
-            
-            a.get("#{code_base_url}/book.json") do |book_json|
-              if book_json.body[0,1] == '<'
-                puts " Sorry, this samplecode apparently isn't available yet: #{code_base_url}/book.json"
-              else
-                book_res = JSON.parse(book_json.body)
-                filename = book_res["sampleCode"]
-                url = "#{code_base_url}/#{filename}"
+        
+        begin
+        
+          a.get(session['url']) do |page|
+            has_samplecode = false
+            page.links_with(:href => %r{/samplecode/} ).each do |link|            
+              has_samplecode = true
+              code_base_url = File.dirname(link.href)
               
-                puts "  Downloading #{url}"
-                begin
-                  a.get(url) do |downloaded_file|
-                    open(dirname + "/" + filename, 'wb') do |file|
-                      file.write(downloaded_file.body)
+              a.get("#{code_base_url}/book.json") do |book_json|
+                if book_json.body[0,1] == '<'
+                  puts " Sorry, this samplecode apparently isn't available yet: #{code_base_url}/book.json"
+                else
+                  book_res = JSON.parse(book_json.body)
+                  filename = book_res["sampleCode"]
+                  url = "#{code_base_url}/#{filename}"
+                
+                  puts "  Downloading #{url}"
+                  begin
+                    a.get(url) do |downloaded_file|
+                      open(dirname + "/" + filename, 'wb') do |file|
+                        file.write(downloaded_file.body)
+                      end
                     end
+                  rescue Exception => e
+                    puts "  Download failed #{e}"
                   end
-                rescue Exception => e
-                  puts "  Download failed #{e}"
                 end
               end
             end
-          end
-          
-          if !has_samplecode
-            puts "  Sorry, this session doesn't have samplecode, cleaning up."
-            begin
-              Dir.delete( dirname )
-            rescue
+            
+            if !has_samplecode
+              puts "  Sorry, this session doesn't have samplecode, cleaning up."
+              begin
+                Dir.delete( dirname )
+              rescue
+              end
             end
-          end
-          
+            
+          end 
+        
+        rescue Mechanize::ResponseCodeError => e
+          STDERR.puts "  Error retrieving list for session. Proceeding with next session (#{$!})"
+          next
         end
       end
     end
