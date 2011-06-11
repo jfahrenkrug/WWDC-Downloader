@@ -74,6 +74,14 @@ mkdir(dl_dir)
 a.get(BASE_URI) do |page|
   res = JSON.parse(page.body)
   
+  # Was there an error?
+  error = res['response']['error']
+  
+  if (error)
+    STDERR.puts "  Apple's API returned an error: '#{error}'"
+    exit
+  end
+  
   sessions = res['response']['sessions']
   
   if sessions.size > 0
