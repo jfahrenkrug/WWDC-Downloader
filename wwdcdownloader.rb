@@ -22,22 +22,22 @@ rescue LoadError => e
   exit
 end
 
-puts "WWDC 2011 Session Material Downloader"
+puts "WWDC 2012 Session Material Downloader"
 puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
 puts "See you next year!"
 puts
 
 if ARGV.size < 1
-  puts "Usage: ruby wwdc2011downloader.rb <your Apple ID> [<target-dir>]"
+  puts "Usage: ruby wwdcdownloader.rb <your Apple ID> [<target-dir>]"
   exit
 end
 
-BASE_URI = 'https://developer.apple.com/wwdc/scripts/services.php?type=get_session_data'
+BASE_URI = 'https://developer.apple.com/wwdc-services/bct8wj4n/services.php?type=get_session_data'
 
 dl_dir = if ARGV.size > 1 
   ARGV.last
 else
-  'wwdc2011-assets'
+  'wwdc2012-assets'
 end
 
 # Creates the given directory if it doesn't exist already.
