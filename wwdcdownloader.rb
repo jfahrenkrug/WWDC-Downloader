@@ -32,122 +32,209 @@ if ARGV.size < 1
   exit
 end
 
-BASE_URI = 'https://developer.apple.com/wwdc-services/bct8wj4n/services.php?type=get_session_data'
-
 dl_dir = if ARGV.size > 1 
   ARGV.last
 else
   'wwdc2012-assets'
 end
 
-# Creates the given directory if it doesn't exist already.
-def mkdir(dir)
-  Dir.mkdir dir unless File.exists?(dir)
-end
+class WWDCDownloader
+  BASE_URI = 'https://developer.apple.com/wwdc-services/bct8wj4n/services.php?type=get_session_data'
 
-a = Mechanize.new
-
-# Login
-wrong_password = true
-
-while wrong_password do
-  password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
+  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/wwdc/ios', :lib => '/navigation/library.json'}, 
+                    {:base => 'https://developer.apple.com/library/wwdc/mac', :lib => '/navigation/library.json'}]
   
-  a.get(BASE_URI) do |page|
-    my_page = page.form_with(:name => 'appleConnectForm') do |f|
-      f.theAccountName  = ARGV[0]
-      f.theAccountPW = password
-    end.click_button
+  attr_accessor :downloaded_files, :dl_dir, :mech, :min_date
+  
+  def initialize(dl_dir, min_date)
+    self.dl_dir = dl_dir
+    self.min_date = min_date
+    self.mech = Mechanize.new
+    self.downloaded_files = []
+  end
 
-    if my_page.body =~ /get_session_data/
-      wrong_password = false
+  # Creates the given directory if it doesn't exist already.
+  def mkdir(dir)
+    if File.exists?(dir)
+      false
     else
-      puts "Wrong password, please try again."
+      Dir.mkdir dir 
+      true
     end
   end
-end
 
-# create dir
-mkdir(dl_dir)
+  # Login
+  def login
+    wrong_password = true
 
-# get the sessions JSON  
-a.get(BASE_URI) do |page|
-  res = JSON.parse(page.body)
+    while wrong_password do
+      password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
   
-  # Was there an error?
-  error = res['response']['error']
-  
-  if (error)
-    STDERR.puts "  Apple's API returned an error: '#{error}'"
-    exit
-  end
-  
-  sessions = res['response']['sessions']
-  
-  if sessions.size > 0
-    
-    sessions.each do |session|
-      if session['type'] == 'Session'
-        title = session['title']
-        session_id = session['id']
-        puts "Session #{session_id} '#{title}'..."
+      self.mech.get(BASE_URI) do |page|
+        my_page = page.form_with(:name => 'appleConnectForm') do |f|
+          f.theAccountName  = ARGV[0]
+          f.theAccountPW = password
+        end.click_button
 
-        # get the files
-        dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!/, '')}" 
-        puts "  Creating #{dirname}"
-        mkdir(dirname)
-        
-        begin
-        
-          a.get(session['url']) do |page|
-            has_samplecode = false
-            page.links_with(:href => %r{/samplecode/} ).each do |link|            
-              has_samplecode = true
-              code_base_url = File.dirname(link.href)
-              
-              a.get("#{code_base_url}/book.json") do |book_json|
-                if book_json.body[0,1] == '<'
-                  puts " Sorry, this samplecode apparently isn't available yet: #{code_base_url}/book.json"
-                else
-                  book_res = JSON.parse(book_json.body)
-                  filename = book_res["sampleCode"]
-                  url = "#{code_base_url}/#{filename}"
-                
-                  puts "  Downloading #{url}"
-                  begin
-                    a.get(url) do |downloaded_file|
-                      open(dirname + "/" + filename, 'wb') do |file|
-                        file.write(downloaded_file.body)
-                      end
-                    end
-                  rescue Exception => e
-                    puts "  Download failed #{e}"
-                  end
-                end
-              end
-            end
-            
-            if !has_samplecode
-              puts "  Sorry, this session doesn't have samplecode, cleaning up."
-              begin
-                Dir.delete( dirname )
-              rescue
-              end
-            end
-            
-          end 
-        
-        rescue Mechanize::ResponseCodeError => e
-          STDERR.puts "  Error retrieving list for session. Proceeding with next session (#{$!})"
-          next
+        if my_page.body =~ /get_session_data/
+          wrong_password = false
+        else
+          puts "Wrong password, please try again."
         end
       end
     end
-  else
-    print "No sessions :(.\n"
+  end
+  
+  def download_sample_code_from_book_json(book_json_url, code_base_url, dest_dir, duplicates_ok)
+    did_download = false
+    self.mech.get(book_json_url) do |book_json|
+      if book_json.body[0,1] == '<'
+        puts " Sorry, this samplecode apparently isn't available yet: #{code_base_url}/book.json"
+      else
+        book_res = JSON.parse(book_json.body)
+        filename = book_res["sampleCode"]
+        url = "#{code_base_url}/#{filename}"
+        
+        if duplicates_ok or !self.downloaded_files.include?(url)            
+          # remember what we downloaded
+          self.downloaded_files << url
+    
+          puts "  Downloading #{url}"
+          begin
+            self.mech.get(url) do |downloaded_file|
+              open(dest_dir + "/" + filename, 'wb') do |file|
+                file.write(downloaded_file.body)
+              end
+              did_download = true
+            end
+          rescue Exception => e
+            puts "  Download failed #{e}"
+          end
+        elsif !duplicates_ok
+          puts "  Already downloaded this file, skipping."
+        end
+      end
+    end
+    
+    did_download
+  end
+
+  def download_sample_code_for_page(a_page_url, dest_dir, duplicates_ok = true)
+    self.mech.get(a_page_url) do |page|
+      has_samplecode = false
+      page.links_with(:href => %r{/samplecode/} ).each do |link|            
+        has_samplecode = true
+        code_base_url = File.dirname(link.href)
+      
+        download_sample_code_from_book_json("#{code_base_url}/book.json", code_base_url, dest_dir, duplicates_ok)
+      end
+    
+      if !has_samplecode
+        puts "  Sorry, this session doesn't have samplecode, cleaning up."
+        begin
+          Dir.delete( dest_dir )
+        rescue
+        end
+      end
+    
+    end
+  end
+
+  def load
+    mkdir(dl_dir)
+    
+   # get the sessions JSON  
+   self.mech.get(BASE_URI) do |page|
+     res = JSON.parse(page.body)
+   
+     # Was there an error?
+     error = res['response']['error']
+   
+     if (error)
+       STDERR.puts "  Apple's API returned an error: '#{error}'"
+       exit
+     end
+   
+     sessions = res['response']['sessions']
+   
+     if sessions.size > 0
+   
+       sessions.each do |session|
+         if session['type'] == 'Session'
+           title = session['title']
+           session_id = session['id']
+           puts "Session #{session_id} '#{title}'..."
+   
+           # get the files
+           dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!/, '')}" 
+           puts "  Creating #{dirname}"
+           mkdir(dirname)
+       
+           begin
+             download_sample_code_for_page(session['url'], dirname)
+           rescue Mechanize::ResponseCodeError => e
+             STDERR.puts "  Error retrieving list for session. Proceeding with next session (#{$!})"
+             next
+           end
+         end
+       end
+     else
+       print "No sessions :(.\n"
+     end
+   end
+    
+    # scrape the WWDC libraries... 
+    puts
+    puts "Scraping the WWDC libraries (not all sample code might be linked up correctly yet)"
+    WWDC_LIBRARIES.each do |lib_hash|
+      lib = "#{lib_hash[:base]}#{lib_hash[:lib]}"
+      self.mech.get(lib) do |page|
+        body = page.body.gsub("''", '""')
+        res = JSON.parse(body)
+        
+        docs = res['documents']
+        
+        if docs.size > 0
+
+          docs.each do |doc|
+            if doc[2] == 5 and doc[3] >= self.min_date # sample code and newer or equal to min date
+              title = doc[0]
+              
+              puts "Sample Code '#{title}'..."
+
+              # get the files
+              dirname = "#{dl_dir}/#{title.gsub(/\/|&|!/, '')}" 
+              puts "  Creating #{dirname}"
+              did_create_dir = mkdir(dirname)
+              
+              segments = doc[9].split('/')
+              url = "#{lib_hash[:base]}/samplecode/#{segments[2]}/book.json"
+
+              begin     
+                puts url 
+                did_download = download_sample_code_from_book_json(url, "#{lib_hash[:base]}/samplecode/#{segments[2]}", dirname, false)
+                if !did_download and did_create_dir
+                  Dir.delete( dirname )
+                end
+              rescue Mechanize::ResponseCodeError => e
+                STDERR.puts "  Error retrieving list for sample code. Proceeding with next one (#{$!})"
+                next
+              end
+            end
+          end
+        else
+          print "No code samples :(.\n"
+        end
+      end
+    end
+
+    puts "Done."
   end
 end
 
-puts "Done."
+w = WWDCDownloader.new(dl_dir, '2012-06-11')
+w.login
+w.load
+
 
 
