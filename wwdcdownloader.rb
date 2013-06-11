@@ -22,7 +22,7 @@ rescue LoadError => e
   exit
 end
 
-puts "WWDC 2012 Session Material Downloader"
+puts "WWDC 2013 Session Material Downloader"
 puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
 puts "See you next year!"
 puts
@@ -35,14 +35,14 @@ end
 dl_dir = if ARGV.size > 1 
   ARGV.last
 else
-  'wwdc2012-assets'
+  'wwdc2013-assets'
 end
 
 class WWDCDownloader
-  BASE_URI = 'https://developer.apple.com/wwdc-services/bct8wj4n/services.php?type=get_session_data'
+  BASE_URI = 'https://developer.apple.com/wwdc-services/cy4p09ns/a4363cb15472b00287b/sessions.json'
 
-  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/wwdc/ios', :lib => '/navigation/library.json'}, 
-                    {:base => 'https://developer.apple.com/library/wwdc/mac', :lib => '/navigation/library.json'}]
+  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/prerelease/ios', :lib => '/navigation/library.json'}, 
+                    {:base => 'https://developer.apple.com/library/prerelease/mac', :lib => '/navigation/library.json'}]
   
   attr_accessor :downloaded_files, :dl_dir, :mech, :min_date
   
@@ -70,16 +70,16 @@ class WWDCDownloader
     while wrong_password do
       password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
   
-      self.mech.get(BASE_URI) do |page|
+      self.mech.get('https://developer.apple.com/wwdc/videos/') do |page|
         my_page = page.form_with(:name => 'appleConnectForm') do |f|
           f.theAccountName  = ARGV[0]
           f.theAccountPW = password
         end.click_button
 
-        if my_page.body =~ /get_session_data/
-          wrong_password = false
-        else
+        if my_page.body =~ /incorrect/
           puts "Wrong password, please try again."
+        else
+          wrong_password = false
         end
       end
     end
@@ -232,7 +232,7 @@ class WWDCDownloader
   end
 end
 
-w = WWDCDownloader.new(dl_dir, '2012-06-11')
+w = WWDCDownloader.new(dl_dir, '2013-06-10')
 w.login
 w.load
 
