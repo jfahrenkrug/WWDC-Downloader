@@ -7,11 +7,11 @@
 This script will download all the session material for you if you are a WWDC 2013 attendee OR NOT! This year you only need to have an Apple Developer account, that's it!
 You can now simply install WWDC-Downloader as a ruby gem like this:
 
-    gem install wwdcdownloader  
+    gem install wwdcdownloader --no-rdoc --no-ri
 
 or
 
-    sudo gem install wwdcdownloader
+    sudo gem install wwdcdownloader --no-rdoc --no-ri
 
 Run the script like this: 
 

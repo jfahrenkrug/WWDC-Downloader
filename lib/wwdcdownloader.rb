@@ -236,5 +236,6 @@ class WWDCDownloader
     w = WWDCDownloader.new(dl_dir, '2013-06-10')
     w.login
     w.load
+    return 0
   end
 end
