@@ -1,4 +1,5 @@
 # Have fun. Use at your own risk.
+# Copyright (c) 2013 Johannes Fahrenkrug
 
 require 'rubygems'
 require 'fileutils'
@@ -13,29 +14,13 @@ rescue LoadError => e
   puts "You need to have the mechanize, json and highline gems installed."
   puts "Install them by running"
   puts
-  puts "  gem install mechanize json highline"
+  puts "  bundle install"
   puts
-  puts "or"
+  puts "and then run the script like this:"
   puts
-  puts "  sudo gem install mechanize json highline"
+  puts "  bundle exec ruby lib/wwdcdownloader.rb"
   puts
   exit
-end
-
-puts "WWDC 2013 Session Material Downloader"
-puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
-puts "See you next year!"
-puts
-
-if ARGV.size < 1
-  puts "Usage: ruby wwdcdownloader.rb <your Apple ID> [<target-dir>]"
-  exit
-end
-
-dl_dir = if ARGV.size > 1 
-  ARGV.last
-else
-  'wwdc2013-assets'
 end
 
 class WWDCDownloader
@@ -230,11 +215,26 @@ class WWDCDownloader
 
     puts "Done."
   end
+  
+  def self.run!(*args)
+    puts "WWDC 2013 Session Material Downloader"
+    puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
+    puts "See you next year!"
+    puts
+
+    if args.size < 1
+      puts "Usage: wwdcdownloader <your Apple ID> [<target-dir>]"
+      exit
+    end
+
+    dl_dir = if args.size > 1 
+      args.last
+    else
+      'wwdc2013-assets'
+    end
+    
+    w = WWDCDownloader.new(dl_dir, '2013-06-10')
+    w.login
+    w.load
+  end
 end
-
-w = WWDCDownloader.new(dl_dir, '2013-06-10')
-w.login
-w.load
-
-
-

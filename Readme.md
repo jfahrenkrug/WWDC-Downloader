@@ -5,13 +5,17 @@
 ## Sad days are over
 
 This script will download all the session material for you if you are a WWDC 2013 attendee OR NOT! This year you only need to have an Apple Developer account, that's it!
-You'll need ruby and the `mechanize`, `highline` and `json` ruby gems. You can install them like this:
+You can now simply install WWDC-Downloader as a ruby gem like this:
 
-    sudo gem install mechanize json highline
+    gem install wwdcdownloader  
 
-You simply run the script like this: 
+or
 
-    ruby wwdcdownloader.rb <your Apple ID> [<target-dir>]
+    sudo gem install wwdcdownloader
+
+Run the script like this: 
+
+    wwdcdownloader <your Apple ID> [<target-dir>]
 
 The script will create a directory called "wwdc2013-assets" (or <target-dir> if given) in the directory you run the script from.
 
