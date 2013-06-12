@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{wwdcdownloader}
-  s.version = "20.13.0"
+  s.version = "20.13.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Johannes Fahrenkrug"]
@@ -25,7 +25,8 @@ Gem::Specification.new do |s|
     "Readme.md",
     "VERSION",
     "bin/wwdcdownloader",
-    "lib/wwdcdownloader.rb"
+    "lib/wwdcdownloader.rb",
+    "wwdcdownloader.gemspec"
   ]
   s.homepage = %q{https://github.com/jfahrenkrug/WWDC-Downloader}
   s.licenses = ["MIT"]
