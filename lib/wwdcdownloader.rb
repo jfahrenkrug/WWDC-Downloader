@@ -35,6 +35,7 @@ class WWDCDownloader
     self.dl_dir = dl_dir
     self.min_date = min_date
     self.mech = Mechanize.new
+    self.mech.agent.http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     self.downloaded_files = []
   end
 
