@@ -37,6 +37,12 @@ class WWDCDownloader
     self.mech = Mechanize.new
     self.mech.agent.http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     self.downloaded_files = []
+    
+    if ENV['http_proxy'] || ENV['HTTP_PROXY']
+      uri = (ENV['http_proxy']) ? ENV['http_proxy'] : ENV['HTTP_PROXY']
+      parsedUrl = URI.parse(uri)
+      self.mech.set_proxy parsedUrl.host, parsedUrl.port
+    end
   end
 
   # Creates the given directory if it doesn't exist already.
@@ -55,7 +61,7 @@ class WWDCDownloader
 
     while wrong_password do
       password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
-  
+
       self.mech.get('https://developer.apple.com/membercenter/') do |page|
         my_page = page.form_with(:name => 'appleConnectForm') do |f|
           f.theAccountName  = ARGV[0]
