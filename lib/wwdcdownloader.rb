@@ -36,6 +36,7 @@ class WWDCDownloader
     self.min_date = min_date
     self.mech = Mechanize.new
     self.mech.agent.http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    self.mech.agent.follow_meta_refresh = true
     self.downloaded_files = []
     
     if ENV['http_proxy'] || ENV['HTTP_PROXY']
@@ -72,6 +73,21 @@ class WWDCDownloader
           puts "Wrong password, please try again."
         else
           wrong_password = false
+          
+          # do we still need to select a team?
+          if my_page.body =~ /saveTeamSelection/
+            team_form = my_page.form_with(:name => 'saveTeamSelection')
+            
+            # select first team
+            team_select = team_form.field_with(:id => 'teams')
+            team_option = team_select.options[0]
+            team_select.value = team_option
+            
+            puts "Selecting Team #{team_option.text}"
+            
+            button = team_form.button_with(:value => "Continue")
+            team_select_result_page = team_form.click_button(button)
+          end
         end
       end
     end
