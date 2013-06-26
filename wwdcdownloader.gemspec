@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "wwdcdownloader"
-  s.version = "20.13.3"
+  s.version = "20.13.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Johannes Fahrenkrug"]
-  s.date = "2013-06-25"
+  s.date = "2013-06-26"
   s.description = "At each year's WWDC, Apple releases great sample projects. Unfortunately it is very tedious to manually download all these treasures through your browser. WWDC-Downloader solves this problem for you!"
   s.email = "johannes@springenwerk.com"
   s.executables = ["wwdcdownloader"]
