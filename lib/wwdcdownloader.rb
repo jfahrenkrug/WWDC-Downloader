@@ -87,25 +87,32 @@ class WWDCDownloader
         filename = book_res["sampleCode"]
         url = "#{code_base_url}/#{filename}"
         
-        if duplicates_ok or !self.downloaded_files.include?(url)            
-          # remember what we downloaded
-          self.downloaded_files << url
-    
-          puts "  Downloading #{url}"
-          begin
-            self.mech.get(url) do |downloaded_file|
-              open(dest_dir + "/" + filename, 'wb') do |file|
-                file.write(downloaded_file.body)
-              end
-              did_download = true
-            end
-          rescue Exception => e
-            puts "  Download failed #{e}"
-          end
-        elsif !duplicates_ok
-          puts "  Already downloaded this file, skipping."
-        end
+        did_download = download_file(url, filename, dest_dir, duplicates_ok)
       end
+    end
+    
+    did_download
+  end
+  
+  def download_file(url, filename, dest_dir, duplicates_ok = true)
+    did_download = false
+    if duplicates_ok or !self.downloaded_files.include?(url)            
+      # remember what we downloaded
+      self.downloaded_files << url
+
+      puts "  Downloading #{url}"
+      begin
+        self.mech.get(url) do |downloaded_file|
+          open(dest_dir + "/" + filename, 'wb') do |file|
+            file.write(downloaded_file.body)
+          end
+          did_download = true
+        end
+      rescue Exception => e
+        puts "  Download failed #{e}"
+      end
+    elsif !duplicates_ok
+      puts "  Already downloaded this file, skipping."
     end
     
     did_download
@@ -114,17 +121,21 @@ class WWDCDownloader
   def download_sample_code_for_page(a_page_url, dest_dir, duplicates_ok = true)
     self.mech.get(a_page_url) do |page|
       has_samplecode = false
-      page.links_with(:href => %r{/samplecode/} ).each do |link|            
+      page.links_with(:href => /\.zip/ ).each do |link|         
         has_samplecode = true
-        code_base_url = File.dirname(link.href)
-      
-        download_sample_code_from_book_json("#{code_base_url}/book.json", code_base_url, dest_dir, duplicates_ok)
+        #code_base_url = File.dirname(link.href)
+        #download_sample_code_from_book_json("#{code_base_url}/book.json", code_base_url, dest_dir, duplicates_ok)
+        if link.href =~ /(\w+\.zip)$/
+          download_file(link.href, $1, dest_dir, duplicates_ok)
+        else
+          has_samplecode = false
+        end
       end
     
       if !has_samplecode
         puts "  Sorry, this session doesn't have samplecode, cleaning up."
         begin
-          Dir.delete( dest_dir )
+          Dir.delete(dest_dir)
         rescue
         end
       end
@@ -240,7 +251,7 @@ class WWDCDownloader
       'wwdc2013-assets'
     end
     
-    w = WWDCDownloader.new(dl_dir, '2013-06-10')
+    w = WWDCDownloader.new(dl_dir, '2013-06-01')
     w.login
     w.load
     return 0
