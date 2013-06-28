@@ -185,7 +185,7 @@ class WWDCDownloader
            puts "Session #{session_id} '#{title}'..."
    
            # get the files
-           dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!/, '')}" 
+           dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!|:/, '')}" 
            puts "  Creating #{dirname}"
            mkdir(dirname)
        
@@ -222,7 +222,7 @@ class WWDCDownloader
               puts "Sample Code '#{title}'..."
 
               # get the files
-              dirname = "#{dl_dir}/#{title.gsub(/\/|&|!/, '')}" 
+              dirname = "#{dl_dir}/#{title.gsub(/\/|&|!|:/, '')}" 
               puts "  Creating #{dirname}"
               did_create_dir = mkdir(dirname)
               
