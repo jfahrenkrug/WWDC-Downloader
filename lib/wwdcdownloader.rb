@@ -1,4 +1,4 @@
-# Have fun. Use at your own risk.
+self.mech.get('https://developer.apple.com/library/prerelease/ios/navigation/') do |page|# Have fun. Use at your own risk.
 # Copyright (c) 2013 Johannes Fahrenkrug
 
 require 'rubygems'
@@ -63,7 +63,7 @@ class WWDCDownloader
     while wrong_password do
       password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
 
-      self.mech.get('https://developer.apple.com/membercenter/') do |page|
+      self.mech.get('https://developer.apple.com/library/prerelease/ios/navigation/') do |page|
         my_page = page.form_with(:name => 'appleConnectForm') do |f|
           f.theAccountName  = ARGV[0]
           f.theAccountPW = password
