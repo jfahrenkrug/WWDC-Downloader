@@ -1,5 +1,5 @@
 # Have fun. Use at your own risk.
-# Copyright (c) 2013 Johannes Fahrenkrug
+# Copyright (c) 2014 Johannes Fahrenkrug
 
 require 'rubygems'
 require 'fileutils'
@@ -24,7 +24,7 @@ rescue LoadError => e
 end
 
 class WWDCDownloader
-  BASE_URI = 'https://developer.apple.com/wwdc-services/cy4p09ns/a4363cb15472b00287b/sessions.json'
+  #BASE_URI = 'https://developer.apple.com/wwdc-services/cy4p09ns/a4363cb15472b00287b/sessions.json'
 
   WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/prerelease/ios', :lib => '/navigation/library.json'}, 
                     {:base => 'https://developer.apple.com/library/prerelease/mac', :lib => '/navigation/library.json'}]
@@ -163,44 +163,44 @@ class WWDCDownloader
     mkdir(dl_dir)
     
    # get the sessions JSON  
-   self.mech.get(BASE_URI) do |page|
-     res = JSON.parse(page.body)
-   
-     # Was there an error?
-     error = res['response']['error']
-   
-     if (error)
-       STDERR.puts "  Apple's API returned an error: '#{error}'"
-       exit
-     end
-   
-     sessions = res['response']['sessions']
-   
-     if sessions.size > 0
-   
-       sessions.each do |session|
-         if session['type'] == 'Session'
-           title = session['title']
-           session_id = session['id']
-           puts "Session #{session_id} '#{title}'..."
-   
-           # get the files
-           dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!|:/, '')}" 
-           puts "  Creating #{dirname}"
-           mkdir(dirname)
-       
-           begin
-             download_sample_code_for_page(session['url'], dirname)
-           rescue Mechanize::ResponseCodeError => e
-             STDERR.puts "  Error retrieving list for session. Proceeding with next session (#{$!})"
-             next
-           end
-         end
-       end
-     else
-       print "No sessions :(.\n"
-     end
-   end
+   #self.mech.get(BASE_URI) do |page|
+   #  res = JSON.parse(page.body)
+   #
+   #  # Was there an error?
+   #  error = res['response']['error']
+   #
+   #  if (error)
+   #    STDERR.puts "  Apple's API returned an error: '#{error}'"
+   #    exit
+   #  end
+   #
+   #  sessions = res['response']['sessions']
+   #
+   #  if sessions.size > 0
+   #
+   #    sessions.each do |session|
+   #      if session['type'] == 'Session'
+   #        title = session['title']
+   #        session_id = session['id']
+   #        puts "Session #{session_id} '#{title}'..."
+   #
+   #        # get the files
+   #        dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!|:/, '')}" 
+   #        puts "  Creating #{dirname}"
+   #        mkdir(dirname)
+   #    
+   #        begin
+   #          download_sample_code_for_page(session['url'], dirname)
+   #        rescue Mechanize::ResponseCodeError => e
+   #          STDERR.puts "  Error retrieving list for session. Proceeding with next session (#{$!})"
+   #          next
+   #        end
+   #      end
+   #    end
+   #  else
+   #    print "No sessions :(.\n"
+   #  end
+   #end
     
     # scrape the WWDC libraries... 
     puts
@@ -251,7 +251,7 @@ class WWDCDownloader
   end
   
   def self.run!(*args)
-    puts "WWDC 2013 Session Material Downloader"
+    puts "WWDC 2014 Session Material Downloader"
     puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
     puts "See you next year!"
     puts
@@ -264,10 +264,10 @@ class WWDCDownloader
     dl_dir = if args.size > 1 
       args.last
     else
-      'wwdc2013-assets'
+      'wwdc2014-assets'
     end
     
-    w = WWDCDownloader.new(dl_dir, '2013-06-01')
+    w = WWDCDownloader.new(dl_dir, '2014-05-28')
     w.login
     w.load
     return 0
