@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Johannes Fahrenkrug"]
-  s.date = "2014-06-06"
+  s.date = "2014-07-23"
   s.description = "At each year's WWDC, Apple releases great sample projects. Unfortunately it is very tedious to manually download all these treasures through your browser. WWDC-Downloader solves this problem for you!"
   s.email = "johannes@springenwerk.com"
   s.executables = ["wwdcdownloader"]
@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/jfahrenkrug/WWDC-Downloader"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "2.0.3"
+  s.rubygems_version = "2.0.14"
   s.summary = "A small tool to download all the sample code of Apple's latest WWDC developer conference"
 
   if s.respond_to? :specification_version then
