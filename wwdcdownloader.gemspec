@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = "wwdcdownloader"
-  s.version = "20.14.0"
+  s.version = "20.14.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Johannes Fahrenkrug"]
