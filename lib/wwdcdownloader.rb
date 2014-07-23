@@ -64,9 +64,9 @@ class WWDCDownloader
       password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
 
       self.mech.get('https://developer.apple.com/membercenter/') do |page|
-        my_page = page.form_with(:name => 'appleConnectForm') do |f|
-          f.theAccountName  = ARGV[0]
-          f.theAccountPW = password
+        my_page = page.form_with(:name => 'form2') do |f|
+          f.appleId  = ARGV[0]
+          f.accountPassword = password
         end.click_button
 
         if my_page.body =~ /incorrect/
