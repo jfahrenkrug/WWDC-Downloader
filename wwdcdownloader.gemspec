@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "wwdcdownloader"
-  s.version = "20.14.1"
+  s.version = "20.15.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Johannes Fahrenkrug"]
-  s.date = "2014-07-23"
+  s.date = "2015-06-10"
   s.description = "At each year's WWDC, Apple releases great sample projects. Unfortunately it is very tedious to manually download all these treasures through your browser. WWDC-Downloader solves this problem for you!"
   s.email = "johannes@springenwerk.com"
   s.executables = ["wwdcdownloader"]
@@ -37,26 +37,17 @@ Gem::Specification.new do |s|
     s.specification_version = 4
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<mechanize>, ["~> 2.7.1"])
       s.add_runtime_dependency(%q<json>, ["~> 1.8.0"])
-      s.add_runtime_dependency(%q<highline>, ["~> 1.6.19"])
-      s.add_runtime_dependency(%q<nokogiri>, ["~> 1.5.0"])
-      s.add_development_dependency(%q<bundler>, ["~> 1.3.0"])
+      s.add_development_dependency(%q<bundler>, ["~> 1.9.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.0"])
     else
-      s.add_dependency(%q<mechanize>, ["~> 2.7.1"])
       s.add_dependency(%q<json>, ["~> 1.8.0"])
-      s.add_dependency(%q<highline>, ["~> 1.6.19"])
-      s.add_dependency(%q<nokogiri>, ["~> 1.5.0"])
-      s.add_dependency(%q<bundler>, ["~> 1.3.0"])
+      s.add_dependency(%q<bundler>, ["~> 1.9.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.0"])
     end
   else
-    s.add_dependency(%q<mechanize>, ["~> 2.7.1"])
     s.add_dependency(%q<json>, ["~> 1.8.0"])
-    s.add_dependency(%q<highline>, ["~> 1.6.19"])
-    s.add_dependency(%q<nokogiri>, ["~> 1.5.0"])
-    s.add_dependency(%q<bundler>, ["~> 1.3.0"])
+    s.add_dependency(%q<bundler>, ["~> 1.9.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.0"])
   end
 end

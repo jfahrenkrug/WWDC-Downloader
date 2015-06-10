@@ -1,18 +1,16 @@
 # Have fun. Use at your own risk.
-# Copyright (c) 2014 Johannes Fahrenkrug
+# Copyright (c) 2015 Johannes Fahrenkrug
 
 require 'rubygems'
 require 'fileutils'
 require 'net/http'
 
 begin
-  require 'mechanize'
   require 'json'
-  require 'highline/import'
 rescue LoadError => e
   puts
-  puts "You need to have the mechanize, json and highline gems installed."
-  puts "Install them by running"
+  puts "You need to have the json gem installed."
+  puts "Install it by running"
   puts
   puts "  bundle install"
   puts
@@ -26,23 +24,20 @@ end
 class WWDCDownloader
   #BASE_URI = 'https://developer.apple.com/wwdc-services/cy4p09ns/a4363cb15472b00287b/sessions.json'
 
-  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/prerelease/ios', :lib => '/navigation/library.json'}, 
+  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/prerelease/ios', :lib => '/navigation/library.json'},
                     {:base => 'https://developer.apple.com/library/prerelease/mac', :lib => '/navigation/library.json'}]
-  
-  attr_accessor :downloaded_files, :dl_dir, :mech, :min_date
-  
+
+  attr_accessor :downloaded_files, :dl_dir, :min_date, :proxy_uri
+
   def initialize(dl_dir, min_date)
     self.dl_dir = dl_dir
     self.min_date = min_date
-    self.mech = Mechanize.new
-    self.mech.agent.http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    self.mech.agent.follow_meta_refresh = true
     self.downloaded_files = []
-    
+    self.proxy_uri = nil
+
     if ENV['http_proxy'] || ENV['HTTP_PROXY']
       uri = (ENV['http_proxy']) ? ENV['http_proxy'] : ENV['HTTP_PROXY']
-      parsedUrl = URI.parse(uri)
-      self.mech.set_proxy parsedUrl.host, parsedUrl.port
+      self.proxy_uri = URI.parse(uri)
     end
   end
 
@@ -51,76 +46,62 @@ class WWDCDownloader
     if File.exists?(dir)
       false
     else
-      Dir.mkdir dir 
+      Dir.mkdir dir
       true
     end
   end
 
-  # Login
-  def login
-    wrong_password = true
+  def read_url(url)
+    uri = URI.parse(url)
 
-    while wrong_password do
-      password = ask("Enter your ADC password:  ") { |q| q.echo = "*" }
+    http = nil
 
-      self.mech.get('https://developer.apple.com/membercenter/') do |page|
-        my_page = page.form_with(:name => 'form2') do |f|
-          f.appleId  = ARGV[0]
-          f.accountPassword = password
-        end.click_button
-
-        if my_page.body =~ /incorrect/
-          puts "Wrong password, please try again."
-        else
-          wrong_password = false
-          
-          # do we still need to select a team?
-          if my_page.body =~ /saveTeamSelection/
-            team_form = my_page.form_with(:name => 'saveTeamSelection')
-            
-            # select first team
-            team_select = team_form.field_with(:id => 'teams')
-            team_option = team_select.options[0]
-            team_select.value = team_option
-            
-            puts "Selecting Team #{team_option.text}"
-            
-            button = team_form.button_with(:value => "Continue")
-            team_select_result_page = team_form.click_button(button)
-          end
-        end
-      end
+    if self.proxy_uri
+      http = Net::HTTP.new(uri.host, uri.port, self.proxy_uri.host, self.proxy_uri.port, self.proxy_uri.user, self.proxy_uri.password)
+    else
+      http = Net::HTTP.new(uri.host, uri.port)
     end
+
+    http.use_ssl = true
+
+    http.start do |http|
+     request = Net::HTTP::Get.new(uri.request_uri)
+     response = http.request(request)
+
+     if response.code == '200'
+       yield(response.body)
+     end
+   end
   end
-  
+
   def download_sample_code_from_book_json(book_json_url, code_base_url, dest_dir, duplicates_ok)
     did_download = false
-    self.mech.get(book_json_url) do |book_json|
-      if book_json.body[0,1] == '<'
+    self.read_url(book_json_url) do |book_json|
+      if book_json[0,1] == '<'
         puts " Sorry, this samplecode apparently isn't available yet: #{code_base_url}/book.json"
       else
-        book_res = JSON.parse(book_json.body)
+        book_res = JSON.parse(book_json)
         filename = book_res["sampleCode"]
         url = "#{code_base_url}/#{filename}"
-        
+
         did_download = download_file(url, filename, dest_dir, duplicates_ok)
       end
     end
-    
+
     did_download
   end
-  
+
   def download_file(url, filename, dest_dir, duplicates_ok = true)
     did_download = false
-    if duplicates_ok or !self.downloaded_files.include?(url)            
+    if duplicates_ok or !self.downloaded_files.include?(url)
       # remember what we downloaded
       self.downloaded_files << url
 
       puts "  Downloading #{url}"
       begin
-        self.mech.get(url) do |downloaded_file|
+        self.read_url(url) do |downloaded_file|
           open(dest_dir + "/" + filename, 'wb') do |file|
-            file.write(downloaded_file.body)
+            file.write(downloaded_file)
           end
           did_download = true
         end
@@ -130,114 +111,44 @@ class WWDCDownloader
     elsif !duplicates_ok
       puts "  Already downloaded this file, skipping."
     end
-    
-    did_download
-  end
 
-  def download_sample_code_for_page(a_page_url, dest_dir, duplicates_ok = true)
-    self.mech.get(a_page_url) do |page|
-      has_samplecode = false
-      page.links_with(:href => /\.zip/ ).each do |link|         
-        has_samplecode = true
-        #code_base_url = File.dirname(link.href)
-        #download_sample_code_from_book_json("#{code_base_url}/book.json", code_base_url, dest_dir, duplicates_ok)
-        if link.href =~ /(\w+\.zip)$/
-          download_file(link.href, $1, dest_dir, duplicates_ok)
-        else
-          has_samplecode = false
-        end
-      end
-    
-      if !has_samplecode
-        puts "  Sorry, this session doesn't have samplecode, cleaning up."
-        begin
-          Dir.delete(dest_dir)
-        rescue
-        end
-      end
-    
-    end
+    did_download
   end
 
   def load
     mkdir(dl_dir)
-    
-   # get the sessions JSON  
-   #self.mech.get(BASE_URI) do |page|
-   #  res = JSON.parse(page.body)
-   #
-   #  # Was there an error?
-   #  error = res['response']['error']
-   #
-   #  if (error)
-   #    STDERR.puts "  Apple's API returned an error: '#{error}'"
-   #    exit
-   #  end
-   #
-   #  sessions = res['response']['sessions']
-   #
-   #  if sessions.size > 0
-   #
-   #    sessions.each do |session|
-   #      if session['type'] == 'Session'
-   #        title = session['title']
-   #        session_id = session['id']
-   #        puts "Session #{session_id} '#{title}'..."
-   #
-   #        # get the files
-   #        dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!|:/, '')}" 
-   #        puts "  Creating #{dirname}"
-   #        mkdir(dirname)
-   #    
-   #        begin
-   #          download_sample_code_for_page(session['url'], dirname)
-   #        rescue Mechanize::ResponseCodeError => e
-   #          STDERR.puts "  Error retrieving list for session. Proceeding with next session (#{$!})"
-   #          next
-   #        end
-   #      end
-   #    end
-   #  else
-   #    print "No sessions :(.\n"
-   #  end
-   #end
-    
-    # scrape the WWDC libraries... 
+
+    # scrape the WWDC libraries...
     puts
-    puts "Scraping the WWDC libraries (not all sample code might be linked up correctly yet)"
+    puts "Scraping the WWDC libraries..."
     WWDC_LIBRARIES.each do |lib_hash|
       lib = "#{lib_hash[:base]}#{lib_hash[:lib]}"
-      self.mech.get(lib) do |page|
-        body = page.body.gsub("''", '""')
+      puts lib
+      self.read_url(lib) do |body|
+        body = body.gsub("''", '""')
         res = JSON.parse(body)
-        
-        docs = res['documents']
-        
-        if docs.size > 0
 
+        docs = res['documents']
+
+        if docs.size > 0
           docs.each do |doc|
             if doc[2] == 5 and doc[3] >= self.min_date # sample code and newer or equal to min date
               title = doc[0]
-              
+
               puts "Sample Code '#{title}'..."
 
               # get the files
-              dirname = "#{dl_dir}/#{title.gsub(/\/|&|!|:/, '')}" 
+              dirname = "#{dl_dir}/#{title.gsub(/\/|&|!|:/, '')}"
               puts "  Creating #{dirname}"
               did_create_dir = mkdir(dirname)
-              
+
               segments = doc[9].split('/')
               url = "#{lib_hash[:base]}/samplecode/#{segments[2]}/book.json"
 
-              begin     
-                puts url 
-                did_download = download_sample_code_from_book_json(url, "#{lib_hash[:base]}/samplecode/#{segments[2]}", dirname, false)
-                if !did_download and did_create_dir
-                  Dir.delete( dirname )
-                end
-              rescue Mechanize::ResponseCodeError => e
-                STDERR.puts "  Error retrieving list for sample code. Proceeding with next one (#{$!})"
-                next
+              puts url
+              did_download = download_sample_code_from_book_json(url, "#{lib_hash[:base]}/samplecode/#{segments[2]}", dirname, false)
+              if !did_download and did_create_dir
+                Dir.delete( dirname )
               end
             end
           end
@@ -249,26 +160,22 @@ class WWDCDownloader
 
     puts "Done."
   end
-  
+
   def self.run!(*args)
-    puts "WWDC 2014 Session Material Downloader"
+    puts "WWDC 2015 Session Material Downloader"
     puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
     puts "See you next year!"
     puts
+    puts "Usage: wwdcdownloader [<target-dir>]"
+    puts
 
-    if args.size < 1
-      puts "Usage: wwdcdownloader <your Apple ID> [<target-dir>]"
-      exit
-    end
-
-    dl_dir = if args.size > 1 
+    dl_dir = if args.size == 1
       args.last
     else
-      'wwdc2014-assets'
+      'wwdc2015-assets'
     end
-    
-    w = WWDCDownloader.new(dl_dir, '2014-05-28')
-    w.login
+
+    w = WWDCDownloader.new(dl_dir, '2015-06-01')
     w.load
     return 0
   end
