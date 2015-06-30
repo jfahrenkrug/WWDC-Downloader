@@ -93,14 +93,15 @@ class WWDCDownloader
 
   def download_file(url, filename, dest_dir, duplicates_ok = true)
     did_download = false
-    if duplicates_ok or !self.downloaded_files.include?(url)
+    outfilename = dest_dir + "/" + filename
+    if duplicates_ok or (!File.exists?(outfilename) and !self.downloaded_files.include?(url))
       # remember what we downloaded
       self.downloaded_files << url
 
       puts "  Downloading #{url}"
       begin
         self.read_url(url) do |downloaded_file|
-          open(dest_dir + "/" + filename, 'wb') do |file|
+          open(outfilename, 'wb') do |file|
             file.write(downloaded_file)
           end
           did_download = true
