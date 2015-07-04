@@ -43,7 +43,7 @@ class WWDCDownloader
 
   # Creates the given directory if it doesn't exist already.
   def mkdir(dir)
-    if File.exists?(dir)
+    if File.directory?(dir)
       false
     else
       Dir.mkdir dir
@@ -124,7 +124,8 @@ class WWDCDownloader
     puts "Scraping the WWDC libraries..."
     WWDC_LIBRARIES.each do |lib_hash|
       lib = "#{lib_hash[:base]}#{lib_hash[:lib]}"
-      puts lib
+      puts
+      puts "Library #{lib}"
       self.read_url(lib) do |body|
         body = body.gsub("''", '""')
         res = JSON.parse(body)
@@ -140,13 +141,13 @@ class WWDCDownloader
 
               # get the files
               dirname = "#{dl_dir}/#{title.gsub(/\/|&|!|:/, '')}"
-              puts "  Creating #{dirname}"
               did_create_dir = mkdir(dirname)
+              puts "  Created #{dirname}" if did_create_dir
 
               segments = doc[9].split('/')
               url = "#{lib_hash[:base]}/samplecode/#{segments[2]}/book.json"
 
-              puts url
+              #puts url
               did_download = download_sample_code_from_book_json(url, "#{lib_hash[:base]}/samplecode/#{segments[2]}", dirname, false)
               if !did_download and did_create_dir
                 Dir.delete( dirname )
