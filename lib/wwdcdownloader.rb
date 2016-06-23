@@ -1,5 +1,5 @@
 # Have fun. Use at your own risk.
-# Copyright (c) 2015 Johannes Fahrenkrug
+# Copyright (c) 2016 Johannes Fahrenkrug
 
 require 'rubygems'
 require 'fileutils'
@@ -24,8 +24,7 @@ end
 class WWDCDownloader
   #BASE_URI = 'https://developer.apple.com/wwdc-services/cy4p09ns/a4363cb15472b00287b/sessions.json'
 
-  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/prerelease/ios', :lib => '/navigation/library.json'},
-                    {:base => 'https://developer.apple.com/library/prerelease/mac', :lib => '/navigation/library.json'}]
+  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/prerelease/content', :lib => '/navigation/library.json'}]
 
   attr_accessor :downloaded_files, :dl_dir, :min_date, :proxy_uri
 
@@ -128,6 +127,8 @@ class WWDCDownloader
       puts "Library #{lib}"
       self.read_url(lib) do |body|
         body = body.gsub("''", '""')
+        # Fix misformatted JSON
+        body = body.gsub(/\"platform\"\s*:\s*12,$\s*\}/, "\"platform\": 12\n}")
         res = JSON.parse(body)
 
         docs = res['documents']
@@ -164,7 +165,7 @@ class WWDCDownloader
   end
 
   def self.run!(*args)
-    puts "WWDC 2015 Session Material Downloader"
+    puts "WWDC 2016 Session Material Downloader"
     puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
     puts "See you next year!"
     puts
@@ -174,10 +175,10 @@ class WWDCDownloader
     dl_dir = if args.size == 1
       args.last
     else
-      'wwdc2015-assets'
+      'wwdc2016-assets'
     end
 
-    w = WWDCDownloader.new(dl_dir, '2015-06-01')
+    w = WWDCDownloader.new(dl_dir, '2016-06-01')
     w.load
     return 0
   end
