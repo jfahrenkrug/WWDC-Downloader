@@ -1,9 +1,10 @@
 # Have fun. Use at your own risk.
-# Copyright (c) 2016 Johannes Fahrenkrug
+# Copyright (c) 2017 Johannes Fahrenkrug
 
 require 'rubygems'
 require 'fileutils'
 require 'net/http'
+require 'uri'
 
 begin
   require 'json'
@@ -22,9 +23,9 @@ rescue LoadError => e
 end
 
 class WWDCDownloader
-  #BASE_URI = 'https://developer.apple.com/wwdc-services/cy4p09ns/a4363cb15472b00287b/sessions.json'
+  BASE_URI = 'https://devimages-cdn.apple.com/wwdc-services/h8a19f8f/049CCC2F-0D8A-4F7D-BAB9-2D8F5BAA7030/contents.json'
 
-  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/prerelease/content', :lib => '/navigation/library.json'}]
+  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/content', :lib => '/navigation/library.json'}]
 
   attr_accessor :downloaded_files, :dl_dir, :min_date, :proxy_uri
 
@@ -118,6 +119,66 @@ class WWDCDownloader
   def load
     mkdir(dl_dir)
 
+    # get the sessions JSON
+    self.read_url(BASE_URI) do |body|
+      res = JSON.parse(body)
+
+      sessions = res['contents']
+      resources = res['resources']
+
+      if sessions.size > 0
+
+        sessions.each do |session|
+          if session['type'] == 'Session' && session['eventId'] == 'wwdc2017'
+            title = session['title']
+            session_id = session['id'].gsub('wwdc2017-', '')
+            puts "Session #{session_id} '#{title}'..."
+
+            if session['related'] && session['related']['resources']
+              # Iterate over the resources
+              related_resource_ids = session['related']['resources']
+              did_download = false
+
+              # get the files
+              dirname = "#{dl_dir}/#{session_id}-#{title.gsub(/\/|&|!/, '')}"
+              puts "  Creating #{dirname}"
+              did_create_dir = mkdir(dirname)
+
+              resources.each do |resource|
+                if resource['resource_type'] == 'samplecode' && related_resource_ids.include?(resource['id'])
+                  puts "  Found related resource #{resource['url']}"
+
+                  # Zip file? download right away
+                  if resource['url'] =~ /(\w+\.zip)$/
+                    uri = URI.parse(resource['url'])
+                    filename = File.basename(uri.path)
+
+                    if download_file(resource['url'], filename, dirname, true)
+                      did_download = true
+                    end
+                  # Sample code landing page?
+                  else
+                    # Sanitize URL
+                    url = resource['url'].split('/Introduction/Intro.html')[0]
+
+                    if download_sample_code_from_book_json("#{url}/book.json", url, dirname, false)
+                      did_download = true
+                    end
+                  end
+                end
+              end
+
+              if !did_download and did_create_dir
+                Dir.delete(dirname)
+              end
+            end
+          end
+        end
+      else
+        print "No sessions :(.\n"
+      end
+    end
+
     # scrape the WWDC libraries...
     puts
     puts "Scraping the WWDC libraries..."
@@ -165,7 +226,7 @@ class WWDCDownloader
   end
 
   def self.run!(*args)
-    puts "WWDC 2016 Session Material Downloader"
+    puts "WWDC 2017 Session Material Downloader"
     puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
     puts "See you next year!"
     puts
@@ -175,10 +236,10 @@ class WWDCDownloader
     dl_dir = if args.size == 1
       args.last
     else
-      'wwdc2016-assets'
+      'wwdc2017-assets'
     end
 
-    w = WWDCDownloader.new(dl_dir, '2016-06-01')
+    w = WWDCDownloader.new(dl_dir, '2017-06-01')
     w.load
     return 0
   end
