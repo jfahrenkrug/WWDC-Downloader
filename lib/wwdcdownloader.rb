@@ -124,8 +124,7 @@ class WWDCDownloader
       sessions = res['contents']
       resources = res['resources']
 
-      if sessions.size > 0 and 1 == 2
-
+      if sessions.size > 0
         sessions.each do |session|
           if session['type'] == 'Session' && session['eventId'] == 'wwdc2018'
             title = session['title']
