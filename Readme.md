@@ -1,11 +1,7 @@
 # WWDC 2018 Sample Code Downloader
 
-![First World WWDC Sample Code Problem](http://cdn.memegenerator.net/instances/400x/21928207.jpg)
-
-## Sad days are over
-
-This script will download all the session material for you if you are a WWDC 2018 attendee OR NOT!
-You can now simply install WWDC-Downloader as a ruby gem like this:
+This script will download all the WWDC 2018 sample code.
+You can simply install WWDC-Downloader as a ruby gem like this:
 
     gem install wwdcdownloader
 
