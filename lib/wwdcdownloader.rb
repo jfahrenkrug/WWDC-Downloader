@@ -1,5 +1,5 @@
 # Have fun. Use at your own risk.
-# Copyright (c) 2017 Johannes Fahrenkrug
+# Copyright (c) 2018 Johannes Fahrenkrug
 
 require 'rubygems'
 require 'fileutils'
@@ -23,9 +23,7 @@ rescue LoadError => e
 end
 
 class WWDCDownloader
-  BASE_URI = 'https://devimages-cdn.apple.com/wwdc-services/h8a19f8f/049CCC2F-0D8A-4F7D-BAB9-2D8F5BAA7030/contents.json'
-
-  WWDC_LIBRARIES = [{:base => 'https://developer.apple.com/library/content', :lib => '/navigation/library.json'}]
+  BASE_URI = 'https://devimages-cdn.apple.com/wwdc-services/j06970e2/296E57DA-8CE8-4526-9A3E-F0D0E8BD6543/contents.json'
 
   attr_accessor :downloaded_files, :dl_dir, :min_date, :proxy_uri
 
@@ -126,12 +124,12 @@ class WWDCDownloader
       sessions = res['contents']
       resources = res['resources']
 
-      if sessions.size > 0
+      if sessions.size > 0 and 1 == 2
 
         sessions.each do |session|
-          if session['type'] == 'Session' && session['eventId'] == 'wwdc2017'
+          if session['type'] == 'Session' && session['eventId'] == 'wwdc2018'
             title = session['title']
-            session_id = session['id'].gsub('wwdc2017-', '')
+            session_id = session['id'].gsub('wwdc2018-', '')
             puts "Session #{session_id} '#{title}'..."
 
             if session['related'] && session['related']['resources']
@@ -179,54 +177,11 @@ class WWDCDownloader
       end
     end
 
-    # scrape the WWDC libraries...
-    puts
-    puts "Scraping the WWDC libraries..."
-    WWDC_LIBRARIES.each do |lib_hash|
-      lib = "#{lib_hash[:base]}#{lib_hash[:lib]}"
-      puts
-      puts "Library #{lib}"
-      self.read_url(lib) do |body|
-        body = body.gsub("''", '""')
-        # Fix misformatted JSON
-        body = body.gsub(/\"platform\"\s*:\s*12,$\s*\}/, "\"platform\": 12\n}")
-        res = JSON.parse(body)
-
-        docs = res['documents']
-
-        if docs.size > 0
-          docs.each do |doc|
-            if doc[2] == 5 and doc[3] >= self.min_date # sample code and newer or equal to min date
-              title = doc[0]
-
-              puts "Sample Code '#{title}'..."
-
-              # get the files
-              dirname = "#{dl_dir}/#{title.gsub(/\/|&|!|:/, '')}"
-              did_create_dir = mkdir(dirname)
-              puts "  Created #{dirname}" if did_create_dir
-
-              segments = doc[9].split('/')
-              url = "#{lib_hash[:base]}/samplecode/#{segments[2]}/book.json"
-
-              #puts url
-              did_download = download_sample_code_from_book_json(url, "#{lib_hash[:base]}/samplecode/#{segments[2]}", dirname, false)
-              if !did_download and did_create_dir
-                Dir.delete( dirname )
-              end
-            end
-          end
-        else
-          print "No code samples :(.\n"
-        end
-      end
-    end
-
     puts "Done."
   end
 
   def self.run!(*args)
-    puts "WWDC 2017 Session Material Downloader"
+    puts "WWDC 2018 Session Material Downloader"
     puts "by Johannes Fahrenkrug, @jfahrenkrug, springenwerk.com"
     puts "See you next year!"
     puts
@@ -236,10 +191,10 @@ class WWDCDownloader
     dl_dir = if args.size == 1
       args.last
     else
-      'wwdc2017-assets'
+      'wwdc2018-assets'
     end
 
-    w = WWDCDownloader.new(dl_dir, '2017-06-01')
+    w = WWDCDownloader.new(dl_dir, '2018-06-01')
     w.load
     return 0
   end

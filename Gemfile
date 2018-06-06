@@ -7,7 +7,7 @@ gem "json", "~> 1.8.0"
 
 group :development do
   #gem "shoulda", ">= 0"
-  gem "bundler", "~> 1.9.0"
-  gem "jeweler", "~> 1.8.0"
+  gem "bundler", "~> 1.16.2"
+  gem "jeweler", "~> 2.1.1"
   #gem "rcov", ">= 0"
 end
